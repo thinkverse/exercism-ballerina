@@ -24,11 +24,11 @@ service / on new http:Listener(9090) {
 
     // Add HTTP resource function to accept a POST request on path '/calc'
     // The function should accept the above Calculation record as the payload and return a generic json object
-    resource function post calc(@http:Payload Calculation calculation) returns json {
+    resource function post calc(@http:Payload Calculation calculation) returns Response {
 
         // Check for each operator '+', '-', 'x' or '*' and '/'. and do the calculation
         float result = 0.0;
-        
+
         match calculation.operator {
             "+" => {
                 result = calculation.operand1 + calculation.operand2;
@@ -48,11 +48,9 @@ service / on new http:Listener(9090) {
         string expression = string `${calculation.operand1}${calculation.operator}${calculation.operand2}`;
 
         // Return the result as a Response with the calculation expressed as a string e.g. { result: 0.0, expression: "0+0" };
-        Response response = {
+        return {
             result: result,
             expression: expression
         };
-
-        return response.toJson();
     }
 }
