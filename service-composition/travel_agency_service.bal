@@ -14,7 +14,11 @@ service /travel on new http:Listener(9090) {
 
     // Define a resource method to arrange a tour, that accepts `POST` requests in the path `/arrangeTour`.
     // This resource should accept a value of the type `TourArrangement` that already defined below.
-    resource function post arrangeTour(@http:Payload TourArrangement tour) returns TourCreated|TourFailed|error? {
+    resource function post arrangeTour(@http:Payload TourArrangement tour) returns http:Response|error? {
+        http:Response response = new ();
+
+        // Preemptively set the status code to 400 Bad Request.
+        response.statusCode = 400;
 
         // Extract Travel infomation from the travel reservation request
         Reservation reservation = {
@@ -36,9 +40,9 @@ service /travel on new http:Listener(9090) {
         ServiceResponse airlineResponse = check airlineReservationEP->/reserve.post(reservation);
 
         if airlineResponse.status is FAILED {
-            return <TourFailed>{
-                body: {message: "Failed to reserve airline! Provide a valid 'preference' for 'airline' and try again"}
-            };
+            response.setJsonPayload({message: "Failed to reserve airline! Provide a valid 'preference' for 'airline' and try again"});
+
+            return response;
         }
 
         reservation.preference = tour.preference.accomodation;
@@ -53,9 +57,9 @@ service /travel on new http:Listener(9090) {
         ServiceResponse hotelResponse = check hotelReservationEP->/reserve.post(reservation);
         
         if hotelResponse.status is FAILED {
-            return <TourFailed>{
-                body: {message: "Failed to reserve hotel! Provide a valid 'preference' for 'accommodation' and try again"}
-            };
+            response.setJsonPayload({message: "Failed to reserve hotel! Provide a valid 'preference' for 'accommodation' and try again"});
+
+            return response;
         }
 
         reservation.preference = tour.preference.car;
@@ -63,32 +67,20 @@ service /travel on new http:Listener(9090) {
         ServiceResponse rentalResponse = check carRentalEP->/rent.post(reservation);
 
         if rentalResponse.status is FAILED {
-            return <TourFailed>{
-                body: {message: "Failed to rent car! Provide a valid 'preference' for 'car' and try again"}
-            };
+            response.setJsonPayload({message: "Failed to rent car! Provide a valid 'preference' for 'car' and try again"});
+
+            return response;
         }
 
         // If all three services response positive status, send a successful message to the user
         // with the payload {"Message":"Congratulations! Your journey is ready!!"}
-        return <TourCreated>{
-            body: {message: "Congratulations! Your journey is ready!!"}
-        };
+        // The status code of the response should be 201 Created
+        response.statusCode = 201;
+        response.setJsonPayload({message: "Congratulations! Your journey is ready!!"});
+
+        return response;
     }
 }
-
-type TourFailed record {|
-    *http:Ok;
-    record {|
-        string message;
-    |} body;
-|};
-
-type TourCreated record {|
-    *http:Created;
-    record {|
-        string message;
-    |} body;
-|};
 
 # The payload type received from the tour arrangement service.
 #
