@@ -3,5 +3,7 @@
 # + phrase - a string
 # + return - the acronym
 function abbreviate(string phrase) returns string {
-    // TODO: implement this function
+    string:RegExp r = re `[-\s]+[^\w]*`;
+    string[] c = r.split(phrase).'map(w => w[0]);
+    return string:'join("", ...c).toUpperAscii();
 }
